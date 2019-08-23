@@ -21,11 +21,44 @@ module.exports = class Bullet{
       this.orientation = theta;
     }
 
+    set(x1, y1, x2, y2){
+      this.trajectory = new Line();
+      this.trajectory.setPoints(x1 ,y1, x2, y2);
+    }
+
+    //given a list, find the closest collision point
+    findNearestCollision(boxes, to_ignore){
+      var closest_box = null;
+      var lowest_mag = this.trajectory.getMagnitude();
+      for(var b of boxes){
+        if(b == to_ignore){ continue;}
+        //use fast/efficient method before the most costly point-finding algorithm
+        if(this.trajectory.checkBoxIntersect(b)){
+          var collision_point = this.trajectory.boxIntersectAt(b);
+          if(!collision_point){
+            console.log("A collision was detected but no intersection point \
+            was found. There must be a bug.");
+          }
+          var old_end_point = this.trajectory.end;
+          this.trajectory.end = collision_point;
+          var new_mag = this.trajectory.getMagnitude();
+          if(new_mag < lowest_mag){
+            lowest_mag = new_mag;
+            closest_box = b;
+          }
+          else{
+            this.trajectory.end = old_end_point;
+          }
+        }
+      }
+      return closest_box;
+    }
+
     collide(box){
       if(this.trajectory.checkBoxIntersect(box)){
         var point = this.trajectory.boxIntersectAt(box)
         if(!point){
-          console.log("a bullet hit but had not intersection point... bug");
+          console.log("A bullet hit a box but there was no intersection point... bug");
           return;
         }
         this.trajectory.setEnd(point.x, point.y);
